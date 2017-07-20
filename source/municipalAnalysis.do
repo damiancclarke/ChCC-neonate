@@ -80,6 +80,7 @@ replace peso     = . if peso<500|peso>6000
 replace talla    = . if talla<20|talla==99
 replace edad_m   = . if edad_m<12 | edad_m>=50
 replace hij_total= . if hij_total > 15
+gen     teen     = edad_m<20 if edad_m! = .
 
 destring semanas, gen(gestation)
 replace gestation=. if gestation>45
@@ -114,7 +115,9 @@ restore
 *--------------------------------------------------------------------------------
 preserve
 local yvars peso lbw talla gestation premature
-collapse chcc `yvars' `controls' (sum) nbirth, by(comunaname ccode ano_nac mes_nac)
+local mcon  edad_m teen hij_total 
+local group comunaname ccode ano_nac mes_nac
+collapse chcc `yvars' `controls' `mcon' (sum) nbirth, by(`group')
 
 merge 1:1 mes_nac ano_nac ccode using `fetalDeaths'
 replace fetalDeath=0 if fetalDeath==.
@@ -138,12 +141,16 @@ lab var premature "Premature $< 37$ weeks"
 lab var nbirth    "Number of Births"
 lab var chcc      "Proportion Enrolled in ChCC"
 lab var fDeathRat "Rate of Fetal Deaths/1000 Births"
+lab var ano_nac   "Year of Birth"
+lab var edad_m    "Mother's Age"
+lab var teen      "Proportion Teen Births"
+lab var hij_total "Number of Children"
 
 #delimit ;
-estpost sum chcc peso lbw gestation premature talla fDeathRate nbirth;
+estpost sum chcc peso lbw gestation premat talla nbir fDeathRate ano_nac `mcon';
 estout using "$OUT/SummaryMunicipal-update.tex", replace label style(tex)
-cells("count(label(N)) mean(fmt(2) label(Mean)) sd(fmt(2) label(Std.\ Dev.))
-min(fmt(2) label(Min)) max(fmt(2) label(Max))");
+cells("count mean(fmt(2)) sd(fmt(2)) min(fmt(2)) max(fmt(2))")
+collabels(, none) mlabels(, none);
 #delimit cr
 
 
@@ -156,7 +163,22 @@ foreach var of varlist `yvars' fDeathRate {
     eststo: areg `var' i.time             chcc            , abs(comunaname) `se'
 }
 lab var chcc "Proportion of ChCC coverage"
+
 #delimit ;
+local Est "Estimation sample consists of all municipal-level averages for each
+           month between 2003 and 2010 for all women";
+local Def "Low birth weight refers to the proportion of births under 2,500
+           grams, and premature refers to the proportion of births occurring
+           before 37 weeks of gestation.  Birth weight is measured in grams,
+           Size is measured in centimetres, and Gestation is measured in weeks.
+           Fetal deaths are measured as the number of fetal deaths per 1,000
+           live births.";
+local Wts  "Each cell is weighted using the number of births in the municipality
+           and month";
+local FES  "all specifications include municipality and time (Year $\times$
+           Month) fixed effects.";
+local Sig  "* p$<$0.10; ** p$<$0.05; *** p$<$0.01.";
+
 esttab est1 est4 est7 est10 est13 est16 using "$OUT/comunaDD.tex",
 booktabs b(%-9.3f) se(%-9.3f) brackets stats
 (N r2, fmt(%9.0g %5.3f) label(Observations R-Squared))
@@ -164,15 +186,8 @@ starlevel ("*" 0.10 "**" 0.05 "***" 0.01) keep(chcc _cons) label replace
 mtitles("Weight" "LBW" "Size" "Gestation" "Premature" "Fetal Death") 
 title("Difference-in-Difference Estimates using Municipal Variation in Coverage"
       \label{mDD})
-postfoot("\bottomrule\multicolumn{7}{p{16.8cm}}{\begin{footnotesize} Estimation sample "
-         "consists of all municipal-level averages for each month between 2003 and 2010"
-         "for all women. Low birth weight refers to the proportion of births under     "
-         "2,500 grams, and premature refers to the proportion of births ocurring before"
-         "37 weeks of gestation.  Fetal deaths are measured as the number of fetal     "
-         "deaths per 1,000 live births.  Each cell is weighted using the number of     "
-         "births in the municipality and month, and all specifications include         "
-         "municipality and time (Year $\times$ Month) fixed effects. "
-         "* p$<$0.10; ** p$<$0.05; *** p$<$0.01."
+postfoot("\bottomrule\multicolumn{7}{p{18.8cm}}{\begin{footnotesize}           "
+         "\textsc{Notes to Table \ref{mDD}}: `Est' `Def' `Wts', and `FES' `Sig'"
          "\end{footnotesize}}\end{tabular}\end{table}") style(tex);
 
 esttab est2 est5 est8 est11 est14 est17 using "$OUT/comunaDDtrends.tex",
@@ -181,16 +196,10 @@ booktabs b(%-9.3f) se(%-9.3f) brackets stats
 starlevel ("*" 0.10 "**" 0.05 "***" 0.01) keep(chcc _cons) label replace
 mtitles("Weight" "LBW" "Size" "Gestation" "Premature" "Fetal Death") 
 title("Difference-in-Difference Estimates with Linear Time Trends"
-      \label{mDD})
-postfoot("\bottomrule\multicolumn{7}{p{16.8cm}}{\begin{footnotesize} Estimation sample "
-         "consists of all municipal-level averages for each month between 2003 and 2010"
-         "for all women. Low birth weight refers to the proportion of births under     "
-         "2,500 grams, and premature refers to the proportion of births ocurring before"
-         "37 weeks of gestation.  Each cell is weighted using the number of births in  "
-         "the municipality and month, and all specifications include municipality and  "
-         "time (Year $\times$ Month) fixed effects. "
-         "* p$<$0.10; ** p$<$0.05; *** p$<$0.01."
-         "\end{footnotesize}}\end{tabular}\end{table}") style(tex);
+      \label{mDDtrend})
+postfoot("\bottomrule\multicolumn{7}{p{18.8cm}}{\begin{footnotesize}           "
+         "\textsc{Notes to Table \ref{mDDtrend}}: `Est' `Def' `Wts', and `FES' "
+         "`Sig' \end{footnotesize}}\end{tabular}\end{table}") style(tex);
 
 esttab est3 est6 est9 est12 est15 est18 using "$OUT/comunaDDweight.tex",
 booktabs b(%-9.3f) se(%-9.3f) brackets stats
@@ -198,47 +207,69 @@ booktabs b(%-9.3f) se(%-9.3f) brackets stats
 starlevel ("*" 0.10 "**" 0.05 "***" 0.01) keep(chcc _cons) label replace
 mtitles("Weight" "LBW" "Size" "Gestation" "Premature" "Fetal Death") 
 title("Difference-in-Difference Estimates Without Municipality Weights"
-      \label{mDD})
-postfoot("\bottomrule\multicolumn{7}{p{16.8cm}}{\begin{footnotesize} Estimation sample "
-         "consists of all municipal-level averages for each month between 2003 and 2010"
-         "for all women. Low birth weight refers to the proportion of births under     "
-         "2,500 grams, and premature refers to the proportion of births ocurring before"
-         "37 weeks of gestation.  Each cell is weighted using the number of births in  "
-         "the municipality and month, and all specifications include municipality and  "
-         "time (Year $\times$ Month) fixed effects. "
-         "* p$<$0.10; ** p$<$0.05; *** p$<$0.01."
-         "\end{footnotesize}}\end{tabular}\end{table}") style(tex);
+      \label{mDDnowt})
+postfoot("\bottomrule\multicolumn{7}{p{18.8cm}}{\begin{footnotesize}           "
+         "\textsc{Notes to Table \ref{mDDnowt}}: `Est' `Def' `Wts', and `FES' "
+         "`Sig' \end{footnotesize}}\end{tabular}\end{table}") style(tex);
 #delimit cr
 estimates clear
 
 restore
 
+
 *--------------------------------------------------------------------------------
 *--- (6) Distributional Impacts (birth weight)
-*--------------------------------------------------------------------------------    
-***ADD GESTATION HERE AND PLOT OUTPUT
-preserve
-local yvarsp
-local yvarso
-foreach num of numlist 5(5)95 {
-    local yvarsp `yvarsp' (p`num') p`num'=peso
-    local yvarso `yvarso' p`num'
+*--------------------------------------------------------------------------------
+foreach var of varlist peso gestation {
+    preserve
+    local yvarsp
+    foreach num of numlist 5(5)95 {
+        local yvarsp `yvarsp' (p`num') p`num'=`var'
+    }
+    
+    collapse chcc `yvarsp' (sum) nbirth, by(comunaname ano_nac mes_nac)
+    sum p*
+            
+    gen time = (ano_nac-2000)*12+mes_nac
+    egen ccode = group(comunaname)
+    gen per = .
+    foreach t in Level Log {
+        gen est_`t' = .
+        gen LB_`t'  = .
+        gen UB_`t'  = .
+    }
+
+    local j = 1
+    foreach num of numlist 5(5)95 {
+        areg p`num' i.time chcc [aw=nbirth], abs(comunaname) `se'
+        replace per       = `num'    in `j'
+        replace est_Level = _b[chcc] in `j'
+        replace LB_Level  = _b[chcc]-invttail(e(df_r),0.025)*_se[chcc] in `j'
+        replace UB_Level  = _b[chcc]+invttail(e(df_r),0.025)*_se[chcc] in `j'
+        
+        replace p`num'=log(p`num')
+        areg p`num' i.time chcc [aw=nbirth], abs(comunaname) `se'
+        replace est_Log = _b[chcc] in `j'
+        replace LB_Log  = _b[chcc]-invttail(e(df_r),0.025)*_se[chcc] in `j'
+        replace UB_Log  = _b[chcc]+invttail(e(df_r),0.025)*_se[chcc] in `j'
+        local ++j
+    }
+    if `"`var'"'=="peso" local vname "Birth Weight"
+    if `"`var'"'=="gestation" local vname "Gestation Length"
+    
+    foreach type in Level Log {
+        #delimit ;
+        twoway scatter est_`type' per, msymbol(O) mcolor(red)
+        ||     rcap UB_`type' LB_`type' per, lcolor(black) lpattern(dash)
+        scheme(s1mono) xtitle("Percentile of `vname' Distribution")
+        ytitle("Impact of ChCC (`type')") yline(0, lcolor(gs14))
+        legend(lab(1 "Point Estimate") lab(2 "95% CI"));
+        graph export "$OUT/Percentiles_`var'_`type'.eps", replace;
+        #delimit cr
+    }
+    restore
 }
-
-collapse chcc `yvarsp' (sum) nbirth, by(comunaname ano_nac mes_nac)
-sum p*
-
-gen time = (ano_nac-2000)*12+mes_nac
-egen ccode = group(comunaname)
-
-foreach var of varlist `yvarso' {
-    eststo: areg `var' i.time chcc [aw=nbirth], abs(comunaname) `se'
-    replace `var'=log(`var')
-    eststo: areg `var' i.time chcc [aw=nbirth], abs(comunaname) `se'
-}
-estimates clear
-restore
-
+exit
 *--------------------------------------------------------------------------------
 *--- (7a) FPS
 *--------------------------------------------------------------------------------
