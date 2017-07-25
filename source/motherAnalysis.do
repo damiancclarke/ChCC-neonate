@@ -54,6 +54,7 @@ replace edad_m    = . if edad_m<14|edad_m>=50
 replace hij_total = . if hij_total>15
 
 gen everChCC = chcc==1
+
 *--------------------------------------------------------------------------------
 *--- (2) Descriptives/Sum Stats
 *--------------------------------------------------------------------------------
@@ -150,13 +151,20 @@ gen beforeafter = twoafter==1&twobefore==1
 
 
 local fse fe vce(cluster run_padre_falso)
-local controls i.edad_m i.hij_total i.ano_nac#i.mes_nac i.ccode
+local controls i.edad_m i.hij_total i.ano_nac
+local controlsX i.edad_m i.hij_total i.ano_nac#i.mes_nac i.ccode
 
+file open pvals using "$OUT/MC_FE_porig.tex", write replace
 foreach yvar in peso lbw talla semanas premature {
     *eststo: xtreg `yvar' `controls' postChCC if beforeafter==1, `fse'
     *eststo: xtreg `yvar' `controls' postChCC if beforeafter==1&hij_tot<=2, `fse'
-    eststo: xtreg `yvar' `controls' postChCC, `fse'
+    eststo: xtreg `yvar' `controls'  postChCC, `fse'
+    local p`yvar'=string(ttail(e(df_r),abs(_b[postChCC]/_se[postChCC]))*2,"%5.4f")
+    file write pvals "& `p`yvar''"
+    eststo: xtreg `yvar' `controlsX' postChCC, `fse'
 }
+file write pvals "\\" _n
+file close pvals
 lab var peso      "Birth Weight"
 lab var lbw       "LBW"
 lab var talla     "Size"
@@ -164,24 +172,40 @@ lab var semanas   "Gestation"
 lab var premature "Premature"
 lab var postChCC  "Participated in ChCC"
 
+
 #delimit ;
-esttab est1 est2 est3 est4 est5 using "$OUT/motherFE.tex", booktabs
+esttab est1 est3 est5 est7 est9 using "$OUT/motherFE.tex", booktabs
 b(%-9.3f) se(%-9.3f) brackets starlevel("*" 0.10 "**" 0.05 "***" 0.01) 
 stats(N r2, fmt(%9.0g %5.3f) label(Observations R-Squared))
 keep(postChCC _cons) label replace
 mtitles("Weight" "LBW" "Size" "Gestation" "Premature")
 title("Estimated Program Effects with Mother Fixed Effects"\label{mFE})
-postfoot("\bottomrule\multicolumn{6}{p{14.2cm}}{\begin{footnotesize}   "
+postfoot("\bottomrule\multicolumn{6}{p{15.6cm}}{\begin{footnotesize}   "
          "Estimation sample consists of all births where the data      "
          "link exists between the child and the mother's participation "
          "in social programs, including ChCC.  Additional details      "
          "regarding this procedure are provided in Appendix \ref{MFE}. "
          "In each case mother's fixed effects are included, and full   "
          "fixed effects for mother's age at birth, child birth order,  "
-         "and child's month and municipality of birth are included.    "
-         "Standard errors are clustered by mother."
+         "and child's year of birth are included.  Standard errors are "
+         "clustered by mother."
          "* p$<$0.10; ** p$<$0.05; *** p$<$0.01."
          "\end{footnotesize}}\end{tabular}\end{table}") style(tex);
+
+esttab est2 est4 est6 est8 est10 using "$OUT/motherFE-controls.tex",
+b(%-9.3f) se(%-9.3f) brackets starlevel("*" 0.10 "**" 0.05 "***" 0.01) 
+stats(N r2, fmt(%9.0g %5.3f) label(Observations R-Squared)) booktabs
+keep(postChCC _cons) label replace
+mtitles("Weight" "LBW" "Size" "Gestation" "Premature")
+title("Maternal FE Estimates with Additional Controls"\label{mFEc})
+postfoot("\bottomrule\multicolumn{6}{p{15.6cm}}{\begin{footnotesize}   "
+         "Refer to notes in table \ref{mFE}.  All details of estimated "
+         "specifications are identical, however we now include year by "
+         "month fixed effects, and fixed effects for municipality of   "
+         "birth."
+         "* p$<$0.10; ** p$<$0.05; *** p$<$0.01."
+         "\end{footnotesize}}\end{tabular}\end{table}") style(tex);
+
 #delimit cr
 
 
@@ -197,6 +221,12 @@ do rwolf/rwolf.ado
 rwolf peso lbw talla semanas premature, indepvar(postChCC)
       method(xtreg) `fse' verbose reps(50) controls(`controls');
 #delimit cr
+local pRW 
+foreach var of varlist peso lbw talla semanas premature {
+    local p`var'=string(e(rw_`var'),"%5.4f")
+    local pRW "`pRW' & `p`var'' "
+}
+local pRW "`pRW' \\"
 
 ***[B -- ANDERSON INDEX]
 local yvars peso lbw talla semanas premature
@@ -212,7 +242,7 @@ foreach var of varlist `yvars' {
     gen z_`j'=(`var'-`mean')/`stdev'
     local ++j
 }
-foreach var of varlist lbw vlbw premature {
+foreach var of varlist lbw premature {
     replace `var'=-1*`var'
 }
 corr z_1 z_2 z_3 z_4 z_5, covariance
@@ -234,5 +264,8 @@ replace sbar=. if sbar==0
 sum sbar
 
 xtreg sbar `controls' postChCC, `fse'
-xtreg sbar `controls' postChCC if edad_m<=45, `fse'
-xtreg sbar `controls' postChCC if beforeafter==1, `fse'
+local psbar=string(ttail(e(df_r),abs(_b[postChCC]/_se[postChCC]))*2,"%5.4f")
+
+file open pvals using "$OUT/MC_FE_pRW.tex", write replace
+file write pvals "\textbf{`psbar'} `pRW' \\" _n
+file close pvals

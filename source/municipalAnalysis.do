@@ -13,7 +13,7 @@ vers 11
 clear all
 set more off
 cap log close
-set matsize 1000
+set matsize 4000
 *--------------------------------------------------------------------------------
 *--- (0) Globals, Log
 *--------------------------------------------------------------------------------
@@ -21,7 +21,7 @@ global DAT "~/investigacion/2016/ChCC-neonate/data"
 global OUT "~/investigacion/2016/ChCC-neonate/results"
 global LOG "~/investigacion/2016/ChCC-neonate/log"
 
-log using "$LOG/municipalAnalysis.txt", text replace
+log using "$LOG/municipalAnalysis-2.txt", text replace
 cap mkdir "$OUT/comunaTrends"
 cap mkdir "$OUT/comunaTrends/bwt"
 
@@ -59,6 +59,7 @@ merge m:1 comuna anio using $DAT/crosswalk
 drop if _merge==2
 drop _merge
 
+
 merge m:1 ccode using $DAT/early-MDS
 gen early = _merge==3
 drop _merge
@@ -75,6 +76,14 @@ local controls Sin_discapacidad Pueblo_indigena edu_basica edu_media
 #delimit cr
 sum `controls'
 drop _merge
+
+**CHECK COMUNA CODES HERE
+merge m:1 ccode ano_nac using $DAT/controls/ComunaControls.dta
+
+local tvcontrol IADM09 IPEECN HPISMN HPVM2N ISOC001 ITER007
+drop if _merge==2
+drop _merge
+
 
 replace peso     = . if peso<500|peso>6000
 replace talla    = . if talla<20|talla==99
@@ -117,7 +126,7 @@ preserve
 local yvars peso lbw talla gestation premature
 local mcon  edad_m teen hij_total 
 local group comunaname ccode ano_nac mes_nac
-collapse chcc `yvars' `controls' `mcon' (sum) nbirth, by(`group')
+collapse chcc `yvars' `controls' `tvcontrol' `mcon' (sum) nbirth, by(`group')
 
 merge 1:1 mes_nac ano_nac ccode using `fetalDeaths'
 replace fetalDeath=0 if fetalDeath==.
@@ -155,13 +164,17 @@ collabels(, none) mlabels(, none);
 
 
 *--------------------------------------------------------------------------------
-*--- (5) Main regressions
+*--- (5a) Main regressions
 *--------------------------------------------------------------------------------    
+file open pvals using "$OUT/MC_DD_porig.tex", write replace
 foreach var of varlist `yvars' fDeathRate {
     eststo: areg `var' i.time             chcc [aw=nbirth], abs(comunaname) `se'
-    eststo: areg `var' i.time `tcontrols' chcc [aw=nbirth], abs(comunaname) `se'
-    eststo: areg `var' i.time             chcc            , abs(comunaname) `se'
+    local p`var'=string(ttail(e(df_r),abs(_b[chcc]/_se[chcc]))*2,"%5.4f") 
+    if `"`var'"'!="fDeathRate" file write pvals "& `p`var''"
 }
+file write pvals "\\" _n
+file close pvals
+
 lab var chcc "Proportion of ChCC coverage"
 
 #delimit ;
@@ -179,7 +192,7 @@ local FES  "all specifications include municipality and time (Year $\times$
            Month) fixed effects.";
 local Sig  "* p$<$0.10; ** p$<$0.05; *** p$<$0.01.";
 
-esttab est1 est4 est7 est10 est13 est16 using "$OUT/comunaDD.tex",
+esttab est1 est2 est3 est4 est5 est6 using "$OUT/comunaDD.tex",
 booktabs b(%-9.3f) se(%-9.3f) brackets stats
 (N r2, fmt(%9.0g %5.3f) label(Observations R-Squared))
 starlevel ("*" 0.10 "**" 0.05 "***" 0.01) keep(chcc _cons) label replace
@@ -189,33 +202,37 @@ title("Difference-in-Difference Estimates using Municipal Variation in Coverage"
 postfoot("\bottomrule\multicolumn{7}{p{18.8cm}}{\begin{footnotesize}           "
          "\textsc{Notes to Table \ref{mDD}}: `Est' `Def' `Wts', and `FES' `Sig'"
          "\end{footnotesize}}\end{tabular}\end{table}") style(tex);
-
-esttab est2 est5 est8 est11 est14 est17 using "$OUT/comunaDDtrends.tex",
-booktabs b(%-9.3f) se(%-9.3f) brackets stats
-(N r2, fmt(%9.0g %5.3f) label(Observations R-Squared))
-starlevel ("*" 0.10 "**" 0.05 "***" 0.01) keep(chcc _cons) label replace
-mtitles("Weight" "LBW" "Size" "Gestation" "Premature" "Fetal Death") 
-title("Difference-in-Difference Estimates with Linear Time Trends"
-      \label{mDDtrend})
-postfoot("\bottomrule\multicolumn{7}{p{18.8cm}}{\begin{footnotesize}           "
-         "\textsc{Notes to Table \ref{mDDtrend}}: `Est' `Def' `Wts', and `FES' "
-         "`Sig' \end{footnotesize}}\end{tabular}\end{table}") style(tex);
-
-esttab est3 est6 est9 est12 est15 est18 using "$OUT/comunaDDweight.tex",
-booktabs b(%-9.3f) se(%-9.3f) brackets stats
-(N r2, fmt(%9.0g %5.3f) label(Observations R-Squared))
-starlevel ("*" 0.10 "**" 0.05 "***" 0.01) keep(chcc _cons) label replace
-mtitles("Weight" "LBW" "Size" "Gestation" "Premature" "Fetal Death") 
-title("Difference-in-Difference Estimates Without Municipality Weights"
-      \label{mDDnowt})
-postfoot("\bottomrule\multicolumn{7}{p{18.8cm}}{\begin{footnotesize}           "
-         "\textsc{Notes to Table \ref{mDDnowt}}: `Est' `Def' `Wts', and `FES' "
-         "`Sig' \end{footnotesize}}\end{tabular}\end{table}") style(tex);
 #delimit cr
 estimates clear
 
-restore
+*--------------------------------------------------------------------------------
+*--- (5b) Alternative Controls
+*--------------------------------------------------------------------------------
+local f1 i.region#i.ano_nac `tvcontrol'
+local f2 i.ccode#i.ano_nac  `tvcontrol'
+local wt [aw=nbirth]
 
+
+gen region = floor(ccode/1000)
+foreach var of varlist `yvars' fDeathRate {
+    eststo: areg `var' i.time                     chcc `wt', abs(comunaname) `se'    
+    eststo: areg `var' i.time `tvcontrol'         chcc `wt', abs(comunaname) `se'
+    eststo: areg `var' i.time i.region#c.time     chcc `wt', abs(comunaname) `se'
+    eststo: areg `var' i.time i.region#i.ano_nac  chcc `wt', abs(comunaname) `se'
+    eststo: areg `var' i.time `f1'                chcc `wt', abs(comunaname) `se'
+    eststo: areg `var' i.time i.ccode#c.time      chcc `wt', abs(comunaname) `se'
+    eststo: areg `var' i.time i.ccode#i.ano_nac   chcc `wt', abs(comunaname) `se'
+    eststo: areg `var' i.time `f2'                chcc `wt', abs(comunaname) `se'
+
+    #delimit ;
+    esttab est1 est2 est3 est4 est5 est6 est7 est8 using "$OUT/Alt_`var'.tex",
+    b(%-9.3f) se(%-9.3f) brackets noobs keep(chcc) nonotes mlabels(, none)
+    nonumbers style(tex) fragment replace noline label
+    starlevel ("*" 0.10 "**" 0.05 "***" 0.01) ;
+    #delimit cr
+    estimates clear
+}
+restore
 
 *--------------------------------------------------------------------------------
 *--- (6) Distributional Impacts (birth weight)
@@ -269,40 +286,61 @@ foreach var of varlist peso gestation {
     }
     restore
 }
-exit
+
+
 *--------------------------------------------------------------------------------
-*--- (7a) FPS
+*--- (7) FPS
+*Primer quintil: de 2.072 a 8.500 puntos.
+*Segundo quintil: de 8.501 a 11.734 puntos.
+*Tercer quintil: de 11.735 a 13.484 puntos.
+*Cuarto quintil: de 13.485 a 14.557 puntos.
+*Quinto quintil: 14.558 o más puntos
 *--------------------------------------------------------------------------------
+local nq 3
+    
 destring puntaje_fps_sept2013, replace
 histogram puntaje_fps_sept2013, bcolor(blue) scheme(s1mono) freq
 graph export ficha.eps, replace
-xtile ficha=puntaje_fps_sept2013, nquantiles(10)
-gen quintile=_n in 1/10
+*xtile ficha=puntaje_fps_sept2013, nquantiles(`nq')
+gen     ficha = 1 if puntaje_fps>=2072 & puntaje_fps<=8500
+replace ficha = 2 if puntaje_fps>8500  & puntaje_fps<=11734
+replace ficha = 3 if puntaje_fps>11734 & puntaje_fps<=13484
+replace ficha = 4 if puntaje_fps>13484 & puntaje_fps<=14557
+replace ficha = 5 if puntaje_fps>14557 & puntaje_fps!=.
 
+gen ficha1 = 1 if puntaje_fps <= 13484
+gen ficha2 = 1 if puntaje_fps <= 11734
+gen ficha3 = 1 if puntaje_fps >  13484
+
+
+gen quintile=_n in 1/`nq'
 replace chcc=. if dn_sexo_padre=="MASCULINO"
 foreach var of varlist peso lbw talla gestation premature {
     gen impact = .
     gen UB     = .
     gen LB     = .
-    foreach num of numlist 1(1)10 {
+    foreach num of numlist 1(1)`nq' {
         preserve
-        keep if ficha==`num'
+        keep if ficha`num'==1
+        *rename `var' `var'_old
+        *gen `var'=`var'_old if ficha`num'==1
         collapse `var' chcc (sum) nbirth, by(comunaname ano_nac mes_nac)
-
+        
         gen time = (ano_nac-2000)*12+mes_nac
         egen ccode = group(comunaname)
         local se cluster(comunaname)
         areg `var' i.time chcc [aw=nbirth], abs(comunaname) `se'
+        estimates store `var'_`num'
         restore
         replace impact = _b[chcc] in `num'
         replace UB     = _b[chcc]+1.96*_se[chcc] in `num'
         replace LB     = _b[chcc]-1.96*_se[chcc] in `num'
-        if `num'==10 {
+        if `num'==`nq' {
             #delimit ;
             twoway scatter impact quintile, msymbol(O) mcolor(red)
             ||     rcap UB LB quintile, lcolor(black) lpattern(dash)
             scheme(s1mono) xtitle("Quintile of Social Protection Score")
-            ytitle("Impact of ChCC") xlabel(1(1)10) yline(0, lcolor(gs14))
+            ytitle("Impact of ChCC") xlabel(1(1)`nq') yline(0, lcolor(gs14))
             legend(lab(1 "Point Estimate") lab(2 "95% CI"));
             graph export "$OUT/FPS_`var'.eps", replace;
             #delimit cr
@@ -310,134 +348,15 @@ foreach var of varlist peso lbw talla gestation premature {
         }
     }
 }
-
-*--------------------------------------------------------------------------------
-*--- (7b) Subgroups
-*--------------------------------------------------------------------------------
-destring edad_m, replace
-destring urb_rural, replace
-destring est_civ_m, replace
-destring nivel_m, replace
-
-#delimit ;
-gen urban = (urb_rural==1&(ano_nac==2003|ano_nac==2005|ano_nac==2006|
-                           ano_nac==2008|ano_nac==2009|ano_nac==2010))|
-            (urb_rural==0&(ano_nac==2004|ano_nac==2007));
-gen married=est_civ_m==1;
-local groups nivel_m<4 nivel_m>=4 urban==1 urban==0 married==1 married==0
-             edad_m<20 edad_m>19;                
-local names  loweduc higheduc urban rural married unmarried teen nonteen;
-#delimit cr
-
-tokenize `groups'
-foreach subgroup of local names {
-    dis "`subgroup'"
-    preserve
-    keep if `1'
-    
-    local yvars peso lbw talla gestation premature
-    collapse chcc early `yvars' (sum) nbirth, by(comunaname ano_nac mes_nac)
-
-    gen time = (ano_nac-2000)*12+mes_nac
-    egen ccode = group(comunaname)
-
-    local se cluster(comunaname)
-    foreach var of varlist `yvars' {
-        eststo: areg `var' i.time chcc [aw=nbirth], abs(comunaname) `se'
-    }
-    lab var chcc "Proportion of ChCC coverage"
+lab var chcc "Proportion ChCC Coverage"
+foreach n of numlist 1(1)`nq' {
     #delimit ;
-    esttab est1 est2 est3 est4 est5 using "$OUT/comunaDD_`subgroup'.tex",
-    booktabs b(%-9.3f) se(%-9.3f) brackets stats
-    (N r2, fmt(%9.0g %5.3f) label(Observations R-Squared))
-    starlevel ("*" 0.10 "**" 0.05 "***" 0.01) keep(chcc _cons)
-    mtitles("Weight" "LBW" "Size" "Gestation" "Premature") label replace
-    title("Difference-in-Difference Estimates: `subgroup'"\label{mDD-`subgroup'})
-    postfoot("\bottomrule\multicolumn{6}{p{14.8cm}}{\begin{footnotesize} Estimation "
-             "sample consists of all municipal-level averages for `subgroup' women  "
-             "each month between 2003 and 2010. Refer to notes in table \ref{mDD}   "
-             "for additional details."
-             "* p$<$0.10; ** p$<$0.05; *** p$<$0.01."
-             "\end{footnotesize}}\end{tabular}\end{table}") style(tex);
+    esttab peso_`n' lbw_`n' talla_`n' gestation_`n' premature_`n'
+    using "$OUT/FPS_`n'.tex", b(%-9.3f) se(%-9.3f) brackets keep(chcc)
+    nonotes mlabels(, none) nonumbers style(tex) fragment replace noline label
+    starlevel ("*" 0.10 "**" 0.05 "***" 0.01) stats
+    (N r2, fmt(%9.0g %5.3f) label(Observations R-Squared));
     #delimit cr
-    estimates clear
-    
-    macro shift
-    restore
-}
-
-**Geography
-foreach region of numlist 1(1)15 {
-    preserve
-    keep if region==`region'
-    
-    local yvars peso lbw talla gestation premature
-    collapse chcc early `yvars' (sum) nbirth, by(comunaname ano_nac mes_nac)
-
-    gen time = (ano_nac-2000)*12+mes_nac
-    egen ccode = group(comunaname)
-
-    local se cluster(comunaname)
-    foreach var of varlist `yvars' {
-        eststo: areg `var' i.time chcc [aw=nbirth], abs(comunaname) `se'
-    }
-    lab var chcc "Proportion of ChCC coverage"
-    #delimit ;
-    esttab est1 est2 est3 est4 est5 using "$OUT/comunaDD_region`region'.tex",
-    booktabs b(%-9.3f) se(%-9.3f) brackets stats
-    (N r2, fmt(%9.0g %5.3f) label(Observations R-Squared))
-    starlevel ("*" 0.10 "**" 0.05 "***" 0.01) keep(chcc _cons)
-    mtitles("Weight" "LBW" "Size" "Gestation" "Premature") label replace
-    title("Difference-in-Difference Estimates: Region `region'"\label{mDD-`region'})
-    postfoot("\bottomrule\multicolumn{6}{p{14.8cm}}{\begin{footnotesize} Estimation  "
-             "sample consists of all municipal-level averages for birth occurring to "
-             "women in region `region' "
-             "each month between 2003 and 2010. Refer to notes in table \ref{mDD}   "
-             "for additional details."
-             "* p$<$0.10; ** p$<$0.05; *** p$<$0.01."
-             "\end{footnotesize}}\end{tabular}\end{table}") style(tex);
-    #delimit cr
-    estimates clear
-    
-    macro shift
-    restore
-}
-
-
-**Time
-foreach year of numlist 2003(1)2007 {
-    preserve
-    keep if ano_nac>=`year'&ano_nac<2010
-    
-    local yvars peso lbw talla gestation premature
-    collapse chcc early `yvars' (sum) nbirth, by(comunaname ano_nac mes_nac)
-
-    gen time = (ano_nac-`year')*12+mes_nac
-    egen ccode = group(comunaname)
-
-    local se cluster(comunaname)
-    foreach var of varlist `yvars' {
-        eststo: areg `var' i.time chcc [aw=nbirth], abs(comunaname) `se'
-    }
-    lab var chcc "Proportion of ChCC coverage"
-    #delimit ;
-    esttab est1 est2 est3 est4 est5 using "$OUT/comunaDD_`year'P.tex",
-    booktabs b(%-9.3f) se(%-9.3f) brackets stats
-    (N r2, fmt(%9.0g %5.3f) label(Observations R-Squared))
-    starlevel ("*" 0.10 "**" 0.05 "***" 0.01) keep(chcc _cons)
-    mtitles("Weight" "LBW" "Size" "Gestation" "Premature") label replace
-    title("Difference-in-Difference Estimates: Years $\geq$ `year'"\label{mDD-`year'})
-    postfoot("\bottomrule\multicolumn{6}{p{14.6cm}}{\begin{footnotesize} Estimation  "
-             "sample consists of all municipal-level averages for birth occurring to "
-             "all women each month between `year' and 2010. Refer to notes in table  "
-             "\ref{mDD} for additional details."
-             "* p$<$0.10; ** p$<$0.05; *** p$<$0.01."
-             "\end{footnotesize}}\end{tabular}\end{table}") style(tex);
-    #delimit cr
-    estimates clear
-    
-    macro shift
-    restore
 }
 
 *--------------------------------------------------------------------------------
@@ -487,19 +406,26 @@ foreach var of varlist `yvars' fDeathRate {
 *--------------------------------------------------------------------------------
 ***[A -- ROMANO WOLF]
 do rwolf/rwolf.ado
+*fDeathRate
 #delimit ;
-rwolf `yvars' fDeathRate [aw=nbirth], indepvar(chcc) controls(i.time) 
-      abs(comunaname) cluster(comunaname) method(areg) v seed(223) reps(25);
+rwolf `yvars' [aw=nbirth], indepvar(chcc) controls(i.time) 
+      abs(comunaname) cluster(comunaname) method(areg) v seed(223) reps(50);
 #delimit cr
-exit
+local pRW
+foreach var of varlist `yvars' {
+    local p`var'=string(e(rw_`var'),"%5.4f")
+    local pRW "`pRW' & `p`var'' "
+}
+local pRW "`pRW' \\"
 
+*fDeathRate
 ***[B -- ANDERSON INDEX]
-local yvars peso lbw talla gestation premature fDeathRate
-foreach var of varlist lbw premature fDeathRate {
+local yvars peso lbw talla gestation premature 
+foreach var of varlist lbw premature {
     replace `var'=-1*`var'
 }
 local j=1
-foreach var of varlist `yvars' fDeathRate {
+foreach var of varlist `yvars' {
     sum `var' if chcc==0
     local stdev = r(sd)
     sum `var'
@@ -507,17 +433,17 @@ foreach var of varlist `yvars' fDeathRate {
     gen z_`j'=(`var'-`mean')/`stdev'
     local ++j
 }
-foreach var of varlist lbw premature fDeathRate {
+foreach var of varlist lbw premature {
     replace `var'=-1*`var'
 }
-corr z_1 z_2 z_3 z_4 z_5 z_6, covariance
+corr z_1 z_2 z_3 z_4 z_5, covariance
 mat def SIGMA = r(C)
-mat def I     = J(6,1,1)
+mat def I     = J(5,1,1)
 mat def sbarpartial = inv((I'*inv(SIGMA)*I))*(I'*inv(SIGMA))
 svmat sbarpartial, names(wts)
 
 gen sbar=0
-foreach num of numlist 1(1)6 {
+foreach num of numlist 1(1)5 {
     sum wts`num'
     replace wts`num'=r(mean)
     gen temp = wts`num'*z_`num'
@@ -525,10 +451,13 @@ foreach num of numlist 1(1)6 {
     drop temp
 }
 sum sbar
-replace sbar=. if sbar==0
-sum sbar
 areg sbar i.time chcc [aw=nbirth], abs(comunaname) cluster(comunaname)
+local psbar=string(ttail(e(df_r),abs(_b[chcc]/_se[chcc]))*2,"%5.4f")
+file open pvals using "$OUT/MC_DD_pRW.tex", write replace
+file write pvals "\textbf{`psbar'} `pRW' \\" _n 
+file close pvals
 restore
+exit
 
 *--------------------------------------------------------------------------------
 *--- (10) Based on trimester
@@ -537,13 +466,36 @@ preserve
 gen trimester_nac=ceil(mes_nac/3)
 
 local yvars peso lbw talla gestation premature
-collapse chcc early `yvars' (sum) nbirth, by(comunaname ano_nac trimester_nac ccode)
+local mcon  edad_m teen hij_total 
+local group comunaname ccode ano_nac trimester_nac
+collapse chcc `yvars' `controls' `mcon' (sum) nbirth, by(`group')
 
 gen time = (ano_nac-2003)*4+trimester_nac
 
 merge 1:1 trimester_nac ano_nac ccode using `fetalDeathsTri'
 replace fetalDeath=0 if fetalDeath==.
 gen     fDeathRate=fetalDeath/nbirth*1000
+
+
+lab var peso      "Birth Weight (grams)"
+lab var lbw       "Low Birth Weight $< 2500$ grams"
+lab var talla     "Length (cm)"
+lab var gestation "Gestation (weeks)"
+lab var premature "Premature $< 37$ weeks"
+lab var nbirth    "Number of Births"
+lab var chcc      "Proportion Enrolled in ChCC"
+lab var fDeathRat "Rate of Fetal Deaths/1000 Births"
+lab var ano_nac   "Year of Birth"
+lab var edad_m    "Mother's Age"
+lab var teen      "Proportion Teen Births"
+lab var hij_total "Number of Children"
+
+#delimit ;
+estpost sum chcc peso lbw gestation premat talla nbir fDeathRate ano_nac `mcon';
+estout using "$OUT/SummaryMunicipal-trimester.tex", replace label style(tex)
+cells("count mean(fmt(2)) sd(fmt(2)) min(fmt(2)) max(fmt(2))")
+collabels(, none) mlabels(, none);
+#delimit cr
 
 
 local se cluster(comunaname)
@@ -559,9 +511,12 @@ starlevel ("*" 0.10 "**" 0.05 "***" 0.01) keep(chcc _cons) label replace
 mtitles("Weight" "LBW" "Size" "Gestation" "Premature" "Fetal Death")
 title("Difference-in-Difference Estimates with Data Collapsed by Trimester"
       \label{mDDt})
-postfoot("\bottomrule\multicolumn{7}{p{16.2cm}}{\begin{footnotesize} Estimation sample "
-         "consists of all municipal-level averages for each quarter between 2003 and   "
-         "2010 for all women. Refer to additional notes in table \ref{mDD}. "
+postfoot("\bottomrule\multicolumn{8}{p{16.2cm}}{\begin{footnotesize}     "
+         "Estimation sample consists of all municipal-level averages for "
+         "each quarter between 2003 and 2010 for all women. Refer to     "
+         "additional notes in table \ref{mDD}, and summary statistics for"
+         "each variable at the trimester by municipal level in Table     "
+         "\ref{tab:sumstatsTri}. "
          "* p$<$0.10; ** p$<$0.05; *** p$<$0.01."
          "\end{footnotesize}}\end{tabular}\end{table}") style(tex);
 
@@ -571,33 +526,9 @@ restore
 
 
 exit
-    
-*--------------------------------------------------------------------------------
-*--- (6) Based on conception dates
-*--------------------------------------------------------------------------------
-*replace month = "0" + month if length(month)==1
-*gen day = dia_nac
-*replace day = "0" + day if length(day)==1
-*egen birthdate = concat(day month ano_nac)
-*gen bdaycode = date(birthdate, "DMY")
-*destring semanas, gen(gestation)
-*replace gestation=. if gestation>45
-*gen daysgest = gestation*7
-*gen concepDay = bdaycode - daysgest
-*format concepDay %td
-*gen concepMonth = month(concepDay)
-*gen concepYear  = year(concepDay)
-
-*collapse chcc early peso, by(comunaname concepYear concepMonth)
-
-*keep if concepYear>1998
-*gen time = (concepYear-1999)*12+concepMonth
-
-*/
-exit
 
 *--------------------------------------------------------------------------------
-*--- (8) Make data of comuna trends
+*--- (11) Make data of comuna trends
 *--------------------------------------------------------------------------------
 file open myfile1 using "$OUT/comunaTrends/cgraphs.tex", write replace
 file open myfile2 using "$OUT/comunaTrends/bwt/cgraphs.tex", write replace
@@ -687,18 +618,8 @@ lab var ChCC      "Mother Ever Participated in ChCC"
 lab var edad_m    "Mother's Age (years)"
 lab var hij_total "Surviving Children"
 lab var talla     "Length (cm)"
-/*
-preserve
-drop if dn_sexo_padre=="MASCULINO"
-drop if chcc_gestante==""
-keep if anio>2002
-#delimit ;
-estpost sum peso lbw vlbw talla gestation premature ChCC edad_m hij_total;
-estout using "$OUT/SummaryIndividual-update.tex", replace label style(tex)
-cells("count(label(N)) mean(fmt(2) label(Mean)) sd(fmt(2) label(Std.\ Dev.))
-min(fmt(2) label(Min)) max(fmt(2) label(Max))");
-#delimit cr
-restore
-*/
 
-
+*--------------------------------------------------------------------------------
+*--- (X) Clean
+*--------------------------------------------------------------------------------
+log close
