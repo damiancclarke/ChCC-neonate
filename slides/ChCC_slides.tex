@@ -1,0 +1,581 @@
+\documentclass[10pt,letterpaper,subeqn]{beamer}
+\setbeamertemplate{navigation symbols}{}
+\usefonttheme{serif}
+\usecolortheme{seahorse}
+
+
+
+\usepackage[english]{babel}
+\selectlanguage{english}
+\usepackage{bm}
+\usepackage{booktabs}
+\usepackage{color}
+\usepackage[update,prepend]{epstopdf}
+\usepackage{framed}
+\usepackage{fleqn}
+\usepackage{graphics}
+\usepackage{hyperref}
+\usepackage[utf8]{inputenc}
+\usepackage{setspace}
+\usepackage{textcomp}
+\usepackage{wrapfig}
+\usepackage{multirow}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{subfloat}
+\setbeamertemplate{caption}[numbered]
+\usepackage{wrapfig}
+\usepackage{tikz}
+
+\definecolor{cadmiumgreen}{rgb}{0.0, 0.42, 0.24}
+\usetikzlibrary{trees}
+\usetikzlibrary{decorations.markings}
+
+
+%================================================================================
+%== TITLE, NAMES, DATE
+%================================================================================
+\title{\textbf{Growing Together}: \\ \vspace{3mm}
+  \small{The Importance of a Large Early-Life Social Inclusion
+    Program on Neonatal Health Outcomes in Latin America}}
+
+\author{Damian Clarke\inst{\ddag}  
+   \and Gustavo Cort\'es M.\inst{\ddag}  
+   \and Diego Vergara S.\inst{\ddag}}
+
+\institute{\inst{\ddag}Universidad de Santiago de Chile \\ \vspace{5mm}}
+%      \and \inst{\ddag} University of Surrey and IZA 
+%      \and \inst{*}     University of Oxford and IZA}
+
+\date{UNU-WIDER, Maputo Mozambique \\ \vspace{2mm} July 2017}
+%********************************************************************************
+\begin{document}
+
+
+\begin{frame}
+\titlepage
+\end{frame}
+%********************************************************************************
+
+\section{Introduction}
+\begin{frame}
+\frametitle{Introduction}
+There is a growing theoretical and empirical literature on the importance of early
+life investments (eg Heckman, Currie, Almond, among many others) \\ \vspace{3mm}
+\begin{itemize}
+\item Investments can be both equity promoting and efficient given dynamic complementarities
+\item Early-life health programs are increasingly part of the basic social safety net in
+  developing and developed countries
+\item This paper examines in detail a particular early life health policy explicitly
+  designed to close gaps which emerge early, and perdure during life
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Introduction}
+We examine the program \emph{Chile Crece Contigo} (ChCC), an early life policy which is
+a flagship of the social safety in Chile \vspace{3mm}
+\begin{itemize}
+\item Many Latin American countries characterised by irregular rather than universally poor,
+  infant health outcomes
+\item Outcomes are particularly poor in socially isolated groups: low income, rural
+  communities, indigenous communites
+\item ChCC is a targeted (means tested) program, rolled out from 2007 onwards, now
+  covering nearly 200,000 (of 250,000 births) annually
+\item Two questions: Is this an equity-promoting policy?  Is this an efficient policy?
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label=Trends]
+\frametitle{Basic Trends in Birth Outcomes: 2000-2010}
+\begin{figure}[htpb!]
+  \begin{center}
+  \centering
+  \caption{Birth Weight by ChCC Participation and Program Timing}
+  \includegraphics[scale=0.6]{./figures/ChCCTrend.eps}
+  \label{fig:ChCCtrends}
+\end{center}
+\end{figure}
+\vspace{-5mm}
+\footnotesize{\hyperlink{longTrends}{\beamerbutton{Longer trends}}}
+\end{frame}
+
+\section{Chile Crece Contigo}
+\begin{frame}
+\frametitle{Chile Crece Contigo}
+Originally two main pillars: The Program for Support of Newborns (PARN) and The Program to Support Bio-Psycho-Social Development (PADBP) \\ \vspace{3mm}
+\begin{itemize}
+\item Follows children from \emph{in utero} to four years
+\item Provides a series of basic services: fortified food, reading material, guaranteed medical check-ups and services
+\item Also provides specialised support for vulnerable families: support for domestic violence, mental health check-ups, outreach beyond community medical clinics
+\item Increased the time of prenatal check-ups from 20-40 minutes
+\item A range of neo-natal and post-natal services
+\item Rolled out in 2007, signed in to law in 2008
+\item Closely linked to academic and policy evidence 
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{ChCC: Also an Emphasis on Diversity, Equality}
+\hfil\hfil\includegraphics[width=5cm]{figures/ninias1.png}\hfil\hfil
+\includegraphics[width=5cm]{figures/ninios2.png}\newline
+\null\hfil\hfil\makebox[5cm]{}
+\hfil\hfil\makebox[5cm]{}
+\vfil
+\hfil\hfil\includegraphics[width=8cm]{figures/familia.jpg}\newline
+\null\hfil\hfil\makebox[5cm]{}\newline
+{\footnotesize Images from \texttt{crececontigo.gob.cl}}
+\end{frame}
+
+\begin{frame}
+\frametitle{Program Definition and Expansion}
+\begin{figure}[htpb!]
+  \begin{center}
+  \centering
+  \caption{Coverage}
+  \includegraphics[scale=0.6]{./figures/ChCCcover.eps}
+  \label{fig:ChCCcover}
+\end{center}
+\end{figure}
+\vspace{-5mm}
+\footnotesize{Note: }
+\end{frame}
+
+\section{Identification}
+\begin{frame}
+\frametitle{Identification}
+We take advantage of two alternative estimation strategies to examine the impact of ChCC: \\ \vspace{4mm}
+\setbeamercovered{transparent}
+\begin{enumerate}
+\item<1>  Within mother variation in policy exposure
+  \begin{itemize}
+  \item For a subset of mothers we observe births prior to and posterior to the reform
+  \item We also observe whether they participated or not in ChCC
+  \item We can thus estimate using maternal FEs in a panel to absorb \emph{all} invariant mother unobservables
+  \end{itemize}
+\item<2> Variation in timing and intensity of municipal roll-out
+  \begin{itemize}
+  \item Variation in exposure in the 346 municipalities in Chile
+  \item Examine how municipal level averages for outcomes of all births in Chile depend on ChCC coverage
+  \item Estimate using a flexible difference-in-differences model
+  \end{itemize}
+\end{enumerate}
+\end{frame}
+
+\begin{frame}
+\frametitle{Individual-Level Data (Mother Fixed Effects)}
+We estimate the following for each birth $i$ to mother $j$ at time $t$: \vspace{3mm}
+\begin{equation}
+  \label{eqn:panel}
+  Infant Health_{ijt} = \beta_0 + \beta_1 ChCC_{jt} + \bm{X_{ijt}\beta}_{x} + \phi_t + \mu_j + \varepsilon_{ijt}
+\end{equation}
+\vspace{3mm}
+\begin{itemize}
+\item Parameter of interest is $\widehat\beta_1$: compare changes in outcomes before and after policy across mothers who did and didn't receive ChCC
+\item Identification is driven by mothers with $>1$ birth
+\item We also include full mother age, year of birth and child birth order fixed effects $\bm{X_{ijt}}$
+\item Cluster standard errors $\varepsilon_{ijt}$ by mother
+\end{itemize}
+\end{frame}
+
+
+
+\begin{frame}
+\frametitle{Municipal-Level Rollout (Difference-in-differences)}
+We estimate the following difference-in-difference specifcation for birth outcomes in municipality $c$ and time $t$:  \vspace{3mm}
+\begin{equation}
+  \label{eqn:DD}
+  Infant Health_{ct} = \alpha_0 + \alpha_1 ChCC_{ct} + \bm{W_{ct}\alpha}_{w} + \phi_t + \lambda_c + \eta_{ct}
+\end{equation}
+\vspace{3mm}
+\begin{itemize}
+\item We use month by municipality cell averages
+\item Cells are weighted by the number of births in the municipality
+\item $ChCC_{ct}$ is proportion of births in municipality which had participated in ChCC during gestation
+\item $\widehat\alpha_1$ captures effect of moving full population into ChCC
+\item Cluster standard errors $\eta_{ct}$ by municipality
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}
+\begin{figure}[htpb!]
+  \begin{center}
+  \centering
+  \caption{Rollout}
+  \includegraphics[scale=0.16]{./figures/Geography.pdf}
+  \label{fig:ChCCcover}
+\end{center}
+\end{figure}
+\end{frame}
+
+\section{Data}
+\begin{frame}
+\frametitle{Data}
+We match administrative data on all births in Chile from 2003 to 2010 with an indicator of whether the mother participated in ChCC during gestation \vspace{3mm}
+\begin{itemize}
+\item High quality birth data covering $>99.5\%$ of all births available from Ministry of Health
+\item Participation in social programs avalaible from Ministry of Social Development (MDS)
+\item Can only match a sub-set ($\sim$50\%) of children to mothers using data from the Social Registry (for mother FEs)
+\item However, can use all births to build municipal averages
+\item Finally, data on rollout over time provided by MDS
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Outcomes}
+  \emph{Ex ante}, outcomes of interest are defined as:
+  \begin{itemize}
+  \item Birth weight (in grams)
+  \item Gestation (in weeks)
+  \item Size at birth (in cm)
+  \item Prematurity ($<$37 weeks)
+  \item Low Birth Weight ($<$2500 grams)
+  \end{itemize}
+  \vspace{4mm}
+  Nonetheless, we are concerned about \textcolor{blue}{multiple hypothesis testing}.  We thus correct using Romano and Wolf step-down testing (fixes FWER), and a single index of outcomes (as defined by Anderson (2008)).
+  \\ \vspace{4mm}
+  
+  We would like to examine APGAR (measured sytematically at 1 and 5 minutes in Chile), however not currently reported in birth data.  Currently working to match this variable with administrative data\ldots
+\end{frame}
+
+\begin{frame}
+\frametitle{Summary Statistics}
+
+\begin{table}[htpb!]
+  \begin{center}
+    \caption{Summary Statistics: Birth and Chile Crece Contigo Data}
+    \label{tab:sumstats}
+    \scalebox{0.7}{
+    \begin{tabular}{lccccc} \toprule
+      & N& Mean & Std. Dev. & Min & Max \\ \midrule
+      \multicolumn{6}{l}{\textbf{Panel A: Individual-Level Data}} \\
+      \input{./tables/SummaryIndividual-update.tex}
+      \multicolumn{6}{l}{\textbf{Panel B: Municipal-Level Data}} \\
+      \input{./tables/SummaryMunicipal-update.tex} \bottomrule
+    \end{tabular}}
+  \end{center}
+\end{table}
+\end{frame}
+%      \multicolumn{6}{p{14cm}}{{\footnotesize \textsc{Notes}: All
+%          births from 2003
+%          to 2010 are included in the estimation sample.  Panel A
+%          presents individual-level statistics for all births.  Birth
+%          weights greater than 5,000 grams or less than 500 grams are
+%          removed from the sample, as are reported gestational times
+%          of less than 25 weeks or greater than 45 weeks.  Panel B
+%          presents municipal level averages collapsed to municipality
+%          and month$\times$ year cells.  ALl municipalities which
+%          have at least one birth in a given month have an observation
+%          (there are 345 municipalities in Chile).  The number of births
+%          in each cell is presented in the last row.
+%      }}
+%
+
+
+\section{Results}
+\begin{frame}
+\frametitle{Main Results (Mother FEs)}
+\input{./tables/motherFE.tex}
+\end{frame}
+
+\begin{frame}
+\frametitle{Main Results (Municipal Roll-out)}
+  \input{./tables/comunaDD.tex}
+\end{frame}
+
+\begin{frame}[label=FSP]
+\begin{figure}[htpb!]
+  \begin{center}
+  \centering
+  \caption{Impacts by Vulnerability Score: Prematurity}
+  \includegraphics[scale=0.75]{./figures/FPS_premature.eps}
+\end{center}
+\end{figure}
+\footnotesize{\hyperlink{FSPapp}{\beamerbutton{Other outcomes}}}
+\end{frame}
+
+
+\begin{frame}[label=Summary]
+\frametitle{Other Results}
+\begin{itemize}
+\item If we focus on mother FE only for mothers with multiple births in the +/- 2 years surrounding the reform, results are \textcolor{blue}{\hyperlink{FE2}{largely similar}}
+\item When focusing on \textcolor{blue}{\hyperlink{lowEd}{less educated}} mothers, the effects of ChCC are much larger than the \textcolor{blue}{\hyperlink{highEd}{more educated}} group (ChCC is a targeted policy)
+\item Correcting for \textcolor{blue}{\hyperlink{multhyp}{multiple hypothesis testing}} does not explain away significant impacts
+\item We examine a large number of placebo tests relating to the date of program implementation\ldots
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[label=Placebo]
+\frametitle{Placebo Test}
+\begin{figure}[htpb!]
+  \begin{center}
+  \centering
+  \caption{Placebo (Birth Weight)}
+  \includegraphics[scale=0.6]{./figures/placebolag_peso.eps}
+  \label{fig:placebo}
+\end{center}
+\end{figure}
+\vspace{-5mm}
+\footnotesize{\hyperlink{allPlacebo}{\beamerbutton{Full placebo results}}}
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Program Efficiency}
+ChCC is approaching 1\% of all fiscal budget expenditures ($\sim$USD 330 Million on ChCC 2010).  Hence important to consider efficiency of spending \vspace{3mm}
+\begin{itemize}
+\item Based on program expenditure, and estimates on impacts, ``cost'' per gram of birth weight is approximately 18 USD
+\item This value is similar to efficiency of WIC and Food Stamp Program in US
+\item Using estimates of the impact of birth weight on long term outcomes in Chile, we estimate
+  that 1200 USD invested in ChCC is equivalent to a 1sd increase in school test scores for a single child (back of the envelope)
+\end{itemize}
+\end{frame}
+
+
+
+\section{Conclusion}
+\begin{frame}
+\frametitle{Conclusions and Future Directions}
+We find a relatively large impact of participation in a pre-natal support program on birth outcomes in Chile \\ \vspace{3mm}
+\begin{itemize}
+\item An expensive program: results point to large economic returns
+\item A targeted program: results are largest among most vulnerable
+\item This program extends beyond birth and up to 4 years.
+\begin{itemize}
+  \item Current work only examines the earliest impacts.
+  \item We expect larger impacts on longer term outcomes (eg education) given on-going investments
+  \item However, long-term outcomes are follow-up work
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\begin{center}
+  \textbf{Thank you}
+\end{center}
+\end{frame}
+
+\section{Appendices}
+\begin{frame}
+\begin{center}
+  \textbf{Appendices}
+\end{center}
+\end{frame}
+
+
+\setcounter{table}{0}
+\renewcommand{\thetable}{A\arabic{table}}
+\setcounter{figure}{0}
+\renewcommand{\thefigure}{A\arabic{figure}}
+
+\begin{frame}[label=longTrends]
+\begin{figure}[htpb!]
+  \begin{center}
+  \centering
+  \caption{Longer Trend: Average Maternal Age}
+  \includegraphics[scale=0.75]{./figures/trends/edad_m.eps}
+\end{center}
+\end{figure}
+\footnotesize{\hyperlink{Trends}{\beamerbutton{Back}}}
+\end{frame}
+
+\begin{frame}
+\begin{figure}[htpb!]
+  \begin{center}
+  \centering
+  \caption{Longer Trend: Birth weight}
+  \includegraphics[scale=0.75]{./figures/trends/peso.eps}
+\end{center}
+\end{figure}
+\footnotesize{\hyperlink{Trends}{\beamerbutton{Back}}}
+\end{frame}
+
+\begin{frame}
+\begin{figure}[htpb!]
+  \begin{center}
+  \centering
+  \caption{Longer Trend: Low Birth Weight}
+  \includegraphics[scale=0.75]{./figures/trends/lbw.eps}
+\end{center}
+\end{figure}
+\footnotesize{\hyperlink{Trends}{\beamerbutton{Back}}}
+\end{frame}
+
+\begin{frame}
+\begin{figure}[htpb!]
+  \begin{center}
+  \centering
+  \caption{Longer Trend: Gestation}
+  \includegraphics[scale=0.75]{./figures/trends/semanas.eps}
+\end{center}
+\end{figure}
+\footnotesize{\hyperlink{Trends}{\beamerbutton{Back}}}
+\end{frame}
+
+\begin{frame}
+\begin{figure}[htpb!]
+  \begin{center}
+  \centering
+  \caption{Longer Trend: Number of Births}
+  \includegraphics[scale=0.75]{./figures/trends/N.eps}
+\end{center}
+\end{figure}
+\footnotesize{\hyperlink{Trends}{\beamerbutton{Back}}}
+\end{frame}
+
+\begin{frame}
+\begin{figure}[htpb!]
+  \begin{center}
+  \centering
+  \caption{Longer Trend: Teen Births}
+  \includegraphics[scale=0.75]{./figures/trends/teenbirth.eps}
+\end{center}
+\end{figure}
+\footnotesize{\hyperlink{Trends}{\beamerbutton{Back}}}
+\end{frame}
+
+\begin{frame}[label=FE2]
+\frametitle{Mother FEs (Only Those with Births +/- 2 years around reform)}
+\input{./tables/motherFE-group.tex}
+\footnotesize{\hyperlink{Summary}{\beamerbutton{Back}}}
+\end{frame}
+
+
+\begin{frame}[label=lowEd]
+  \input{./tables/comunaDD_loweduc.tex}
+\footnotesize{\hyperlink{Summary}{\beamerbutton{Back}}}
+\end{frame}
+
+\begin{frame}[label=highEd]
+  \input{./tables/comunaDD_higheduc.tex}
+\footnotesize{\hyperlink{Summary}{\beamerbutton{Back}}}
+\end{frame}
+
+\begin{frame}[label=multhyp]
+\frametitle{Multiple Hypothesis Testing}
+\begin{table}
+  \caption{Adjusting For Multiple Hypothesis Testing}
+  \begin{center}
+    \scalebox{0.7}{
+      \begin{tabular}{lccccccc} \toprule
+        &  Index & \multicolumn{6}{c}{Original Variables} \\ \cmidrule(r){3-8}
+        &Anderson & Birth & LBW & VLBW & Birth & Weeks & Premature \\
+        &Index    & Weight&     &      & Size  & Gestation & \\ \midrule
+        \multicolumn{8}{l}{\textsc{Panel A: Individual-Level Analysis}} \\
+        $p$-value  (Original)    && 0.0236 & 0.0553 & 0.4499 & 0.2010 & 0.0007 & 0.0956 \\
+        $p$-value  (Corrected) & \textbf{0.7800} & 0.0891 & 0.1683 & 0.3960 & 0.3960 & 0.0040 & 0.2277\\
+        &&&&&&&\\ 
+        \multicolumn{8}{l}{\textsc{Panel B: Municipal-Level Analysis}} \\
+        $p$-value  (Original)    && 0.000 & 0.1301 & 0.7530 & 0.0284 & 0.0000 & 0.2883 \\
+        $p$-value  (Corrected) & \textbf{0.0510} & 0.0196 & 0.3725 & 0.7647 & 0.1373 & 0.0000 & 0.4902\\
+        \midrule
+        \multicolumn{8}{p{14.7cm}}{{\footnotesize \textsc{Notes}: Corrected $p$-values based on original variables are calculated using the Romano Wolf technique to control the Family Wise Error Rate of hypotesis tests. The Anderson (2008) index converts the multiple dependent variables into a single dependent variable (index) giving more weight to variables which provide more independent variation.}} \\ \bottomrule
+  \end{tabular}}
+  \end{center}
+\end{table}
+\footnotesize{\hyperlink{Summary}{\beamerbutton{Back}}}
+\end{frame}
+
+\begin{frame}[label=FSPapp]
+\begin{figure}[htpb!]
+  \begin{center}
+  \centering
+  \caption{Impacts by Vulnerability Score: Birth Weight}
+  \includegraphics[scale=0.75]{./figures/FPS_peso.eps}
+\end{center}
+\end{figure}
+\footnotesize{\hyperlink{FSP}{\beamerbutton{Back}}}
+\end{frame}
+
+\begin{frame}
+\begin{figure}[htpb!]
+  \begin{center}
+  \centering
+  \caption{Impacts by Vulnerability Score: LBW}
+  \includegraphics[scale=0.75]{./figures/FPS_lbw.eps}
+\end{center}
+\end{figure}
+\footnotesize{\hyperlink{FSP}{\beamerbutton{Back}}}
+\end{frame}
+
+\begin{frame}
+\begin{figure}[htpb!]
+  \begin{center}
+  \centering
+  \caption{Impacts by Vulnerability Score: Size}
+  \includegraphics[scale=0.75]{./figures/FPS_talla.eps}
+\end{center}
+\end{figure}
+\footnotesize{\hyperlink{FSP}{\beamerbutton{Back}}}
+\end{frame}
+
+\begin{frame}
+\begin{figure}[htpb!]
+  \begin{center}
+  \centering
+  \caption{Impacts by Vulnerability Score: Gestation Weeks}
+  \includegraphics[scale=0.75]{./figures/FPS_gestation.eps}
+\end{center}
+\end{figure}
+\footnotesize{\hyperlink{FSP}{\beamerbutton{Back}}}
+\end{frame}
+
+\begin{frame}[label=allPlacebo]
+\begin{figure}[htpb!]
+  \begin{center}
+  \centering
+  \caption{Placebo: Gestation}
+  \includegraphics[scale=0.75]{./figures/placebolag_gestation.eps}
+\end{center}
+\end{figure}
+\footnotesize{\hyperlink{Placebo}{\beamerbutton{Back}}}
+\end{frame}
+
+\begin{frame}
+\begin{figure}[htpb!]
+  \begin{center}
+  \centering
+  \caption{Placebo: Prematurity}
+  \includegraphics[scale=0.75]{./figures/placebolag_premature.eps}
+\end{center}
+\end{figure}
+\footnotesize{\hyperlink{Placebo}{\beamerbutton{Back}}}
+\end{frame}
+
+\begin{frame}
+\begin{figure}[htpb!]
+  \begin{center}
+  \centering
+  \caption{Placebo: LBW}
+  \includegraphics[scale=0.75]{./figures/placebolag_lbw.eps}
+\end{center}
+\end{figure}
+\footnotesize{\hyperlink{Placebo}{\beamerbutton{Back}}}
+\end{frame}
+
+\begin{frame}
+\begin{figure}[htpb!]
+  \begin{center}
+  \centering
+  \caption{Placebo: VLBW}
+  \includegraphics[scale=0.75]{./figures/placebolag_vlbw.eps}
+\end{center}
+\end{figure}
+\footnotesize{\hyperlink{Placebo}{\beamerbutton{Back}}}
+\end{frame}
+
+\begin{frame}
+\begin{figure}[htpb!]
+  \begin{center}
+  \centering
+  \caption{Placebo: Length at Birth}
+  \includegraphics[scale=0.75]{./figures/placebolag_talla.eps}
+\end{center}
+\end{figure}
+\footnotesize{\hyperlink{Placebo}{\beamerbutton{Back}}}
+\end{frame}
+
+
+\end{document}
